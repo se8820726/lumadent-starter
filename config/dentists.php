@@ -3,6 +3,7 @@
 return [
     [
         'name' => 'Dr Amelia Hart',
+        'initials' => 'AH',
         'role' => 'General Dentist',
         'bio' => 'Amelia takes a calm, prevention-focused approach and makes time for clear explanations.',
         'services' => ['routine-examinations', 'emergency-appointments', 'cosmetic-dentistry'],
@@ -12,6 +13,7 @@ return [
     ],
     [
         'name' => 'Dr Noah Bennett',
+        'initials' => 'NB',
         'role' => 'Restorative Dentist',
         'bio' => 'Noah focuses on thoughtful treatment planning and comfortable, collaborative care.',
         'services' => ['dental-implants', 'routine-examinations', 'emergency-appointments'],
@@ -21,6 +23,7 @@ return [
     ],
     [
         'name' => 'Dr Priya Shah',
+        'initials' => 'PS',
         'role' => 'Cosmetic and Aligner Dentist',
         'bio' => 'Priya helps patients explore aesthetic options with realistic guidance and careful planning.',
         'services' => ['clear-aligners', 'teeth-whitening', 'cosmetic-dentistry'],
