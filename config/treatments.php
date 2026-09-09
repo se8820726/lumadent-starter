@@ -1,4 +1,4 @@
-+<?php
+<?php
 
 return [
     'routine-examinations' => [
@@ -58,4 +58,3 @@ return [
         'icon' => 'stars',
     ],
 ];
-

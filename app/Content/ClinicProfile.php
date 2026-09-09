@@ -4,8 +4,10 @@ namespace App\Content;
 
 final class ClinicProfile
 {
+    use TranslatesContent;
+
     public function get(): array
     {
-        return config('clinic');
+        return $this->translated('clinic', config('clinic'));
     }
 }

@@ -4,9 +4,14 @@ namespace App\Content;
 
 final class ServiceCatalog
 {
+    use TranslatesContent;
+
     public function all(): array
     {
-        return array_values(config('treatments', []));
+        return array_values(array_map(
+            fn (array $service): array => $this->translated('services.'.$service['slug'], $service),
+            config('treatments', []),
+        ));
     }
 
     public function featured(): array

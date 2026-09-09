@@ -1,58 +1,68 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# LumaDent Starter
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A fictional London dental clinic concept built with Laravel, Blade, Tailwind CSS and Alpine.js. The current foundation includes responsive public pages, English and Arabic, and light, dark and automatic appearance.
 
-## About Laravel
+The clinic, team and contact details are examples. Booking is currently an introductory demo page; it does not collect personal information or create appointments.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Local development
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Requirements: PHP 8.3+, Composer, Node.js and npm.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. Install PHP dependencies with `composer install`.
+2. Copy `.env.example` to `.env`, generate the application key with `php artisan key:generate`, and configure a local SQLite database.
+3. Run `php artisan migrate`.
+4. Install front-end dependencies with `npm.cmd ci` on Windows.
+5. Build assets with `npm.cmd run build`.
+6. Start the local application with `php artisan serve`.
 
-## Learning Laravel
+Use `npm` in place of `npm.cmd` outside Windows. The production server needs the compiled assets in `public/build`, not Node.js. Set `APP_URL` to the deployed HTTPS origin.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Languages and URLs
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Edit `config/localization.php`:
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```php
+return [
+    'default' => 'en',
+    'locales' => [
+        'en' => ['label' => 'English', 'direction' => 'ltr'],
+        'ar' => ['label' => 'العربية', 'direction' => 'rtl'],
+    ],
+];
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The default language must be present in `locales`. With English as default, URLs are `/`, `/services`, `/ar/` and `/ar/services`. Default-prefixed aliases such as `/en/services` permanently redirect to `/services`. Service slugs stay the same in every language. Unsupported language paths return 404.
 
-## Contributing
+The language switch uses normal links to the equivalent page. Pages render their text, `lang`, `dir`, canonical and reciprocal hreflang metadata on the server. Language selection does not depend on cookies or JavaScript. The sitemap is available at `/sitemap.xml`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+To add a language, create its `lang/<locale>/site.php` interface dictionary and `lang/<locale>/content.php` content overrides, then enable its label and direction in the configuration. Finish translations and check both desktop and mobile layouts before enabling a language publicly. Missing content overrides fall back to the English PHP content configuration.
 
-## Code of Conduct
+After changing languages or the default, refresh configuration and route caches during deployment. Changing the default on an already published site also changes its URLs; plan redirects for existing indexed pages.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Content
 
-## Security Vulnerabilities
+- `config/clinic.php`: clinic details, example address, contact details and opening hours.
+- `config/treatments.php`: English services and stable slugs.
+- `config/dentists.php`: English sample team profiles.
+- `lang/en/site.php` and `lang/ar/site.php`: interface and page copy.
+- `lang/ar/content.php`: translated clinic, service and team fields.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Keep the ordered dentist translations aligned with the dentist configuration. No management panel is included in Starter.
 
-## License
+## Appearance and layout
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The header offers Light, Dark and Auto. Auto follows the device preference, including changes while the page is open. Only the appearance preference is stored under `lumadent-theme` in local storage. If storage is blocked, changing appearance still works for the current page.
+
+`resources/js/theme.js` is included synchronously in the document head before the blocking production stylesheet. It applies the saved appearance before page content is painted. System fonts avoid delayed font substitution. With JavaScript unavailable, CSS follows the system appearance and the navigation remains usable.
+
+Build production assets before evaluating first-load appearance. The Vite development server is for editing, not production delivery. If a Content Security Policy is added, authorise the inline theme script with a matching nonce or hash; do not disable the policy. Recheck first paint after changing asset delivery or adding web fonts.
+
+Layout uses logical properties for RTL/LTR, responsive grids, native mobile navigation, visible keyboard focus and reduced-motion support.
+
+## Verification
+
+- `php artisan test`: content, public routes, language configuration, metadata, redirects and sitemap.
+- `npm.cmd test`: initial appearance, persistence, live system preference, blocked storage and history restoration.
+- `npm.cmd run build`: production assets.
+
+Browser verification should cover English and Arabic, both colour themes, 320px/mobile/tablet/desktop layouts, language switching on service details, reloads and Back/Forward navigation.
