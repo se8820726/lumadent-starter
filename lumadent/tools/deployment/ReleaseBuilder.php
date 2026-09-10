@@ -34,6 +34,7 @@ final class ReleaseBuilder
         '.vscode',
         '.zed',
         'README.md',
+        'deployer',
         'lumadent/.env',
         'lumadent/.env.backup',
         'lumadent/.env.production',
@@ -46,8 +47,9 @@ final class ReleaseBuilder
         'lumadent/vendor/bin',
         'public_html/.env',
         'public_html/hot',
-        'public_html/lumadent-deploy.php',
+        'public_html/deploy.php',
         'public_html/storage',
+        'public_html/uploads',
     ];
 
     /**

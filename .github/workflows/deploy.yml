@@ -110,11 +110,9 @@ jobs:
           printf 'ARTIFACT_URL=%s\n' "$artifact_url" >> "$GITHUB_ENV"
           printf 'RELEASE_SHA256=%s\n' "$(tr -d '[:space:]' < "$RELEASE_OUTPUT/release.sha256")" >> "$GITHUB_ENV"
 
-      - name: Deploy and verify public URLs
+      - name: Deploy production
         env:
           DEPLOY_ENDPOINT: ${{ secrets.DEPLOY_ENDPOINT }}
           DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
-          HEALTH_URLS: ${{ vars.HEALTH_URLS }}
           DEPLOY_TIMEOUT_SECONDS: ${{ vars.DEPLOY_TIMEOUT_SECONDS || '600' }}
-          DEPLOY_POLL_SECONDS: ${{ vars.DEPLOY_POLL_SECONDS || '2' }}
         run: php tools/deployment/deploy.php

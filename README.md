@@ -26,6 +26,8 @@ Run application commands from `lumadent`.
 
 Use `npm` in place of `npm.cmd` outside Windows. Vite writes production assets into the sibling `public_html/build` directory. The production server does not need Node.js. Set `APP_URL` to the deployed HTTPS origin.
 
+The Laravel `public` filesystem disk writes directly to `public_html/uploads` and produces URLs under `/uploads`. No `storage:link` command or symbolic link is required. Treat every file in that directory as publicly readable; sensitive files must use a private disk.
+
 ## Languages and URLs
 
 Edit `config/localization.php`:
@@ -78,14 +80,21 @@ Browser verification should cover English and Arabic, both colour themes, 320px/
 
 ## Production deployment
 
-The repository includes `.github/workflows/deploy.yml`. A push to `main` runs commands from `lumadent`, builds Vite assets in `public_html`, packages both directories and sends the release to the standalone PHP deployer through a short-lived GitHub artifact URL. The production server needs PHP 8.3 and outbound HTTPS but does not need Git, Composer, Node.js, SSH or FTP.
+The repository includes `.github/workflows/deploy.yml`. A push to `main` runs commands from `lumadent`, builds Vite assets in `public_html`, installs production PHP dependencies and packages both directories. GitHub sends the resulting immutable release to `public_html/deploy.php` through a short-lived artifact URL. The production server needs PHP 8.3, Zip, OpenSSL, outbound HTTPS and write access to `deployer`, `lumadent` and `public_html`. It does not need Git, Composer, Node.js, SSH or FTP.
 
-Only the newest production workflow continues running. The deployer updates the private `lumadent` directory and public `public_html` directory, checks the configured URLs and restores the previous retained package when its own health checks fail. GitHub then checks the public English and Arabic URLs independently. A failure in this external check fails the job without requesting rollback.
+The endpoint handles one synchronous request. It verifies an HMAC signature shared with GitHub, downloads and checksum-verifies the release ZIP, creates `deployer/rollback.zip`, overlays the release and runs the server-controlled health checks. Any failure from the start of extraction through the final health check restores the backup. Runtime downloads, the backup, the lock and `deployer/deploy.log` remain outside the release package.
 
-Create a GitHub Environment named `production` with:
+Create a GitHub Environment named `production` with secrets `DEPLOY_ENDPOINT` and `DEPLOY_SECRET`. `DEPLOY_ENDPOINT` must be the public HTTPS URL for `public_html/deploy.php`. The optional `DEPLOY_TIMEOUT_SECONDS` variable defaults to 600 seconds.
 
-- secrets `DEPLOY_ENDPOINT` and `DEPLOY_SECRET`;
-- variable `HEALTH_URLS` containing the public checks as JSON;
-- optional variables `DEPLOY_TIMEOUT_SECONDS` and `DEPLOY_POLL_SECONDS`.
+Add the identical secret and the health targets to the private production `lumadent/.env` file:
 
-The Docker and shared-host runtime, first-install steps and recovery states are documented in the separate `lumadent-starter-docker` project. Keep the production Laravel `.env` only on the server under shared configuration; release archives never contain it.
+```dotenv
+DEPLOY_SECRET=replace-with-the-same-random-secret-used-by-github
+DEPLOY_HEALTH_URLS='[{"url":"https://example.com/up","status":[200],"marker":""}]'
+```
+
+Each health target needs an HTTPS URL, a non-empty list of accepted status codes and a response marker. An empty marker checks only the status. The web process must have enough execution time to finish the download, complete backup, extraction and health checks in the same request.
+
+The deployment signature covers the artifact URL, complete release SHA-256 and a random salt. The secret never appears in the URL or request. Replay history is intentionally not stored; HTTPS and the short-lived artifact URL limit the accepted replay window.
+
+Keep the production Laravel `.env` only on the server. Release archives never contain it, and deployment preserves it along with `public_html/deploy.php` and runtime storage. Create `public_html/uploads` on the host and grant the web process write access. Release creation, deployment backup and rollback all leave that directory untouched.

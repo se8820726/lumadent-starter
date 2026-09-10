@@ -40,6 +40,9 @@ final class ReleaseBuilderTest extends TestCase
         self::assertFileExists($output.'/release/lumadent/artisan');
         self::assertFileExists($output.'/release/lumadent/vendor/autoload.php');
         self::assertFileExists($output.'/release/public_html/build/manifest.json');
+        self::assertFileDoesNotExist($output.'/release/public_html/deploy.php');
+        self::assertFileDoesNotExist($output.'/release/public_html/uploads/example.jpg');
+        self::assertFileDoesNotExist($output.'/release/deployer/deploy.php');
         self::assertFileDoesNotExist($output.'/release/lumadent/.env');
         self::assertFileDoesNotExist($output.'/release/lumadent/tests/Test.php');
         self::assertFileDoesNotExist($output.'/release/lumadent/node_modules/module.js');
@@ -88,7 +91,7 @@ final class ReleaseBuilderTest extends TestCase
 
     private function createFixture(string $root): void
     {
-        foreach (['lumadent/bootstrap', 'lumadent/vendor', 'lumadent/tests', 'lumadent/node_modules', 'public_html/build'] as $directory) {
+        foreach (['deployer', 'lumadent/bootstrap', 'lumadent/vendor', 'lumadent/tests', 'lumadent/node_modules', 'public_html/build', 'public_html/uploads'] as $directory) {
             mkdir($root.'/'.$directory, 0775, true);
         }
         foreach ([
@@ -101,6 +104,9 @@ final class ReleaseBuilderTest extends TestCase
             'public_html/index.php' => '<?php echo "ok";',
             'public_html/.htaccess' => 'RewriteEngine On',
             'public_html/build/manifest.json' => '{}',
+            'public_html/deploy.php' => '<?php echo "protected";',
+            'public_html/uploads/example.jpg' => 'dynamic-upload',
+            'deployer/deploy.php' => '<?php echo "private";',
         ] as $path => $content) {
             file_put_contents($root.'/'.$path, $content);
         }
