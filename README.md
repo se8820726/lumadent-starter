@@ -13,16 +13,17 @@ public_html/  public web document root
 
 ## Local development
 
-Requirements: PHP 8.3+, Composer, Node.js and npm.
+Requirements: PHP 8.4.1 or newer, Composer, Node.js 24 and npm.
 
 Run application commands from `lumadent`.
 
 1. Install PHP dependencies with `composer install`.
-2. Copy `.env.example` to `.env`, generate the application key with `php artisan key:generate`, and configure a local SQLite database.
-3. Run `php artisan migrate`.
-4. Install front-end dependencies with `npm.cmd ci` on Windows.
-5. Build assets with `npm.cmd run build`.
-6. Start the local application with `php artisan serve`.
+2. Copy `.env.example` to `.env` and generate the application key with `php artisan key:generate`.
+3. Because `.env.example` is the production template, set `APP_ENV=local`, `APP_DEBUG=true`, `APP_URL=http://127.0.0.1:8000`, `DB_CONNECTION=sqlite`, `SESSION_DRIVER=file`, `SESSION_SECURE_COOKIE=false` and `CACHE_STORE=file` in the local `.env`. Remove the PostgreSQL-only `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` and `DB_SSLMODE` entries.
+4. Ensure `database/database.sqlite` exists, then run `php artisan migrate`.
+5. Install front-end dependencies with `npm.cmd ci` on Windows.
+6. Build assets with `npm.cmd run build`.
+7. Start the local application with `php artisan serve`.
 
 Use `npm` in place of `npm.cmd` outside Windows. Vite writes production assets into the sibling `public_html/build` directory. The production server does not need Node.js. Set `APP_URL` to the deployed HTTPS origin.
 
@@ -48,7 +49,7 @@ The language switch uses normal links to the equivalent page. Pages render their
 
 To add a language, create its `lang/<locale>/site.php` interface dictionary and `lang/<locale>/content.php` content overrides, then enable its label and direction in the configuration. Finish translations and check both desktop and mobile layouts before enabling a language publicly. Missing content overrides fall back to the English PHP content configuration.
 
-After changing languages or the default, refresh configuration and route caches during deployment. Changing the default on an already published site also changes its URLs; plan redirects for existing indexed pages.
+After changing languages or the default, refresh any configuration and route caches used by the server after deployment. Changing the default on an already published site also changes its URLs; plan redirects for existing indexed pages.
 
 ## Content
 
@@ -80,21 +81,82 @@ Browser verification should cover English and Arabic, both colour themes, 320px/
 
 ## Production deployment
 
-The repository includes `.github/workflows/deploy.yml`. A push to `main` runs commands from `lumadent`, builds Vite assets in `public_html`, installs production PHP dependencies and packages both directories. GitHub sends the resulting immutable release to `public_html/deploy.php` through a short-lived artifact URL. The production server needs PHP 8.3, Zip, OpenSSL, outbound HTTPS and write access to `deployer`, `lumadent` and `public_html`. It does not need Git, Composer, Node.js, SSH or FTP.
+The repository includes `.github/workflows/deploy.yml`. A push to `main` tests the application with PHP 8.5 and Node.js 24, builds Vite assets in `public_html`, installs production PHP dependencies and packages the `lumadent` and `public_html` directories. GitHub then sends a signed JSON request containing a short-lived artifact URL to the deployment endpoint.
 
-The endpoint handles one synchronous request. It verifies an HMAC signature shared with GitHub, downloads and checksum-verifies the release ZIP, creates `deployer/rollback.zip`, overlays the release and runs the server-controlled health checks. Any failure from the start of extraction through the final health check restores the backup. Runtime downloads, the backup, the lock and `deployer/deploy.log` remain outside the release package.
+### Shared-host requirements
 
-Create a GitHub Environment named `production` with secrets `DEPLOY_ENDPOINT` and `DEPLOY_SECRET`. `DEPLOY_ENDPOINT` must be the public HTTPS URL for `public_html/deploy.php`. The optional `DEPLOY_TIMEOUT_SECONDS` variable defaults to 600 seconds.
+Use PHP 8.5 with the standard Laravel extensions plus `bcmath`, `fileinfo`, `intl`, `mbstring`, `openssl`, `pdo_pgsql`, `redis` and `zip`. Set `allow_url_fopen=On` so PHP can download the HTTPS artifact, and permit outbound HTTPS connections. The deployment request is synchronous, so `max_execution_time` should be at least as long as `DEPLOY_TIMEOUT_SECONDS`; 600 seconds is the workflow default. OPcache is recommended for production performance but is not required by the deployer.
 
-Add the identical secret and the health targets to the private production `lumadent/.env` file:
+The web-server process needs read and write access to `deployer`, `lumadent` and `public_html`. Git, Composer and Node.js are not required on the production server. A hosting terminal or SSH is needed only for initial setup, migrations and other manual maintenance.
+
+### One-time shared-host bootstrap
+
+Create this structure above the public document root before the first deployment:
+
+```text
+account-root/
+├── deployer/
+│   ├── deploy.php
+│   └── SharedHostDeployer.php
+├── lumadent/
+│   ├── .env
+│   └── storage/
+└── public_html/
+    ├── deploy.php
+    └── uploads/
+```
+
+Upload the bootstrap files from this repository without changing their relative locations:
+
+- `deployer/deploy.php`
+- `deployer/SharedHostDeployer.php`
+- `public_html/deploy.php`
+
+Create the private `lumadent/.env` from `lumadent/.env.example`, set `APP_URL=https://lumadent.prodaynews.com`, configure the production PostgreSQL and Redis connections, and set this health target:
 
 ```dotenv
-DEPLOY_SECRET=replace-with-the-same-random-secret-used-by-github
-DEPLOY_HEALTH_URLS='[{"url":"https://example.com/up","status":[200],"marker":""}]'
+DEPLOY_HEALTH_URLS='[{"url":"https://lumadent.prodaynews.com/up","status":[200],"marker":""}]'
 ```
+
+Generate the Laravel application key and deployment secret on Linux:
+
+```sh
+php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+openssl rand -hex 32
+```
+
+Put the first output in `lumadent/.env` as `APP_KEY`. Put the second output there as `DEPLOY_SECRET`. The deployment secret must contain at least 32 bytes and must exactly match the GitHub secret.
+
+### GitHub production environment
+
+Create a GitHub Environment named `production` with these secrets:
+
+- `DEPLOY_ENDPOINT=https://lumadent.prodaynews.com/deploy.php`
+- `DEPLOY_SECRET` with the exact value stored in the server's `lumadent/.env`
+
+The optional environment variable `DEPLOY_TIMEOUT_SECONDS` defaults to `600` and accepts values from 30 to 3600 seconds.
+
+After the bootstrap files and server environment are ready, run the workflow manually or push to `main` to perform the first deployment.
+
+### Deployment and rollback behavior
+
+The endpoint accepts only POST requests. It verifies the shared HMAC signature, downloads the artifact, extracts the inner release ZIP, verifies its complete SHA-256 checksum, creates `deployer/rollback.zip`, overlays the release and runs the health checks from `DEPLOY_HEALTH_URLS`.
+
+Any failure from the start of extraction through the final health check removes the new release files and restores the file backup. If rollback itself fails, the error is appended to `deployer/deploy.log`. Runtime downloads, the rollback archive, the deployment lock and the log stay in `deployer`, which is outside every release package.
+
+Releases do not contain or replace `deployer`, `lumadent/.env`, `public_html/deploy.php` or `public_html/uploads`. Existing data under `lumadent/storage` is retained by the overlay deployment. Public uploads must be stored in `public_html/uploads`; no storage symlink is used.
 
 Each health target needs an HTTPS URL, a non-empty list of accepted status codes and a response marker. An empty marker checks only the status. The web process must have enough execution time to finish the download, complete backup, extraction and health checks in the same request.
 
 The deployment signature covers the artifact URL, complete release SHA-256 and a random salt. The secret never appears in the URL or request. Replay history is intentionally not stored; HTTPS and the short-lived artifact URL limit the accepted replay window.
 
-Keep the production Laravel `.env` only on the server. Release archives never contain it, and deployment preserves it along with `public_html/deploy.php` and runtime storage. Create `public_html/uploads` on the host and grant the web process write access. Release creation, deployment backup and rollback all leave that directory untouched.
+### Database migrations
+
+The deployer does not run Artisan commands. After the first successful deployment, enter the private Laravel directory and run:
+
+```sh
+cd /path/to/lumadent
+php artisan migrate --force --no-interaction
+```
+
+Run the same migration command after any later release that contains new migrations. File rollback does not reverse database changes. Production migrations must therefore remain backward-compatible with both the previous and current application release; take PostgreSQL backups separately before risky schema or data changes.
