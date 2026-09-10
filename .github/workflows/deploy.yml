@@ -1,0 +1,120 @@
+name: Test and deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: lumadent-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    name: Build, deploy and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    defaults:
+      run:
+        working-directory: lumadent
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, zip
+          coverage: none
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: lumadent/package-lock.json
+
+      - name: Install test dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Run PHP tests
+        run: php artisan test
+
+      - name: Install front-end dependencies
+        run: npm ci
+
+      - name: Run JavaScript tests
+        run: npm test
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Install production PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Build release package
+        env:
+          RELEASE_OUTPUT: ${{ runner.temp }}/lumadent-release
+        run: |
+          php tools/deployment/build-release.php \
+            --source=.. \
+            --output="$RELEASE_OUTPUT" \
+            --release-id="${GITHUB_SHA,,}" \
+            --run-id="$GITHUB_RUN_ID" \
+            --built-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      - name: Upload immutable release artifact
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: lumadent-release-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/lumadent-release/release.zip
+            ${{ runner.temp }}/lumadent-release/release.sha256
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+
+      - name: Create short-lived artifact download URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          RELEASE_OUTPUT: ${{ runner.temp }}/lumadent-release
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          curl --silent --show-error --fail-with-body \
+            --dump-header "$headers" \
+            --output /dev/null \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip"
+          artifact_url="$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/, ""); sub(/\r$/, ""); print}' "$headers" | tail -n 1)"
+          rm -f "$headers"
+          test -n "$artifact_url"
+          case "$artifact_url" in https://*) ;; *) exit 1 ;; esac
+          echo "::add-mask::$artifact_url"
+          printf 'ARTIFACT_URL=%s\n' "$artifact_url" >> "$GITHUB_ENV"
+          printf 'RELEASE_SHA256=%s\n' "$(tr -d '[:space:]' < "$RELEASE_OUTPUT/release.sha256")" >> "$GITHUB_ENV"
+
+      - name: Deploy and verify public URLs
+        env:
+          DEPLOY_ENDPOINT: ${{ secrets.DEPLOY_ENDPOINT }}
+          DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}
+          HEALTH_URLS: ${{ vars.HEALTH_URLS }}
+          DEPLOY_TIMEOUT_SECONDS: ${{ vars.DEPLOY_TIMEOUT_SECONDS || '600' }}
+          DEPLOY_POLL_SECONDS: ${{ vars.DEPLOY_POLL_SECONDS || '2' }}
+        run: php tools/deployment/deploy.php

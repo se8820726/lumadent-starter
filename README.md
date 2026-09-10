@@ -4,9 +4,18 @@ A fictional London dental clinic concept built with Laravel, Blade, Tailwind CSS
 
 The clinic, team and contact details are examples. Booking is currently an introductory demo page; it does not collect personal information or create appointments.
 
+The repository uses the same two-directory layout as production:
+
+```text
+lumadent/     private Laravel application
+public_html/  public web document root
+```
+
 ## Local development
 
 Requirements: PHP 8.3+, Composer, Node.js and npm.
+
+Run application commands from `lumadent`.
 
 1. Install PHP dependencies with `composer install`.
 2. Copy `.env.example` to `.env`, generate the application key with `php artisan key:generate`, and configure a local SQLite database.
@@ -15,7 +24,7 @@ Requirements: PHP 8.3+, Composer, Node.js and npm.
 5. Build assets with `npm.cmd run build`.
 6. Start the local application with `php artisan serve`.
 
-Use `npm` in place of `npm.cmd` outside Windows. The production server needs the compiled assets in `public/build`, not Node.js. Set `APP_URL` to the deployed HTTPS origin.
+Use `npm` in place of `npm.cmd` outside Windows. Vite writes production assets into the sibling `public_html/build` directory. The production server does not need Node.js. Set `APP_URL` to the deployed HTTPS origin.
 
 ## Languages and URLs
 
@@ -66,3 +75,17 @@ Layout uses logical properties for RTL/LTR, responsive grids, native mobile navi
 - `npm.cmd run build`: production assets.
 
 Browser verification should cover English and Arabic, both colour themes, 320px/mobile/tablet/desktop layouts, language switching on service details, reloads and Back/Forward navigation.
+
+## Production deployment
+
+The repository includes `.github/workflows/deploy.yml`. A push to `main` runs commands from `lumadent`, builds Vite assets in `public_html`, packages both directories and sends the release to the standalone PHP deployer through a short-lived GitHub artifact URL. The production server needs PHP 8.3 and outbound HTTPS but does not need Git, Composer, Node.js, SSH or FTP.
+
+Only the newest production workflow continues running. The deployer updates the private `lumadent` directory and public `public_html` directory, checks the configured URLs and restores the previous retained package when its own health checks fail. GitHub then checks the public English and Arabic URLs independently. A failure in this external check fails the job without requesting rollback.
+
+Create a GitHub Environment named `production` with:
+
+- secrets `DEPLOY_ENDPOINT` and `DEPLOY_SECRET`;
+- variable `HEALTH_URLS` containing the public checks as JSON;
+- optional variables `DEPLOY_TIMEOUT_SECONDS` and `DEPLOY_POLL_SECONDS`.
+
+The Docker and shared-host runtime, first-install steps and recovery states are documented in the separate `lumadent-starter-docker` project. Keep the production Laravel `.env` only on the server under shared configuration; release archives never contain it.

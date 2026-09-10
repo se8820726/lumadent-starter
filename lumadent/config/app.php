@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'release_id' => env('LUMADENT_RELEASE_ID'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
