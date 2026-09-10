@@ -53,6 +53,8 @@ jobs:
         run: npm ci
 
       - name: Run JavaScript tests
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
         run: npm test
 
       - name: Build production assets
