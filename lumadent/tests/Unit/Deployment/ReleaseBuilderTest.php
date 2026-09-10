@@ -47,6 +47,7 @@ final class ReleaseBuilderTest extends TestCase
         self::assertFileDoesNotExist($output.'/release/lumadent/tests/Test.php');
         self::assertFileDoesNotExist($output.'/release/lumadent/node_modules/module.js');
         self::assertSame(str_repeat('a', 40), $manifest['release_id']);
+        self::assertSame('8.5.0', $manifest['php']);
         self::assertSame(['lumadent/artisan', 'lumadent/bootstrap/app.php', 'lumadent/vendor/autoload.php', 'public_html/.htaccess', 'public_html/build/manifest.json', 'public_html/index.php'], array_column($manifest['files'], 'path'));
     }
 

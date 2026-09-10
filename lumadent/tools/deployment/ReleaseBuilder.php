@@ -107,7 +107,7 @@ final class ReleaseBuilder
             'release_id' => $metadata['release_id'],
             'run_id' => (string) $metadata['run_id'],
             'built_at' => $metadata['built_at'],
-            'php' => '8.3.0',
+            'php' => '8.5.0',
             'files' => $files,
         ];
 

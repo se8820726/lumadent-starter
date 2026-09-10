@@ -11,15 +11,53 @@ use RuntimeException;
 
 final class DeployClientTest extends TestCase
 {
+    public function test_environment_example_contains_only_the_required_production_contract(): void
+    {
+        $environment = file_get_contents(__DIR__.'/../../../.env.example');
+        self::assertIsString($environment);
+
+        foreach ([
+            'APP_ENV=production',
+            'APP_DEBUG=false',
+            'APP_URL=https://example.com',
+            'DB_CONNECTION=pgsql',
+            'DB_HOST=postgres',
+            'DB_PORT=5432',
+            'SESSION_DRIVER=redis',
+            'SESSION_SECURE_COOKIE=true',
+            'CACHE_STORE=redis',
+            'QUEUE_CONNECTION=sync',
+            'FILESYSTEM_DISK=public',
+            'REDIS_CLIENT=phpredis',
+            'REDIS_HOST=redis',
+            'REDIS_PASSWORD=null',
+            'DEPLOY_SECRET=',
+            'DEPLOY_HEALTH_URLS=',
+        ] as $required) {
+            self::assertStringContainsString($required, $environment);
+        }
+
+        foreach (['APP_FAKER_LOCALE', 'PHP_CLI_SERVER_WORKERS', 'MEMCACHED_HOST', 'AWS_ACCESS_KEY_ID', 'VITE_APP_NAME', 'LARAVEL_STORAGE_PATH', 'LUMADENT_RELEASE_ID'] as $unused) {
+            self::assertStringNotContainsString($unused, $environment);
+        }
+    }
+
     public function test_production_workflow_has_safe_triggers_concurrency_permissions_and_synchronous_contract(): void
     {
         $workflow = file_get_contents(__DIR__.'/../../../../.github/workflows/deploy.yml');
         self::assertIsString($workflow);
-        foreach (['branches: [main]', 'workflow_dispatch:', 'group: lumadent-production', 'cancel-in-progress: true', 'environment: production', 'contents: read', 'actions: read', 'DEPLOY_ENDPOINT: ${{ secrets.DEPLOY_ENDPOINT }}', 'DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}', 'run: php tools/deployment/deploy.php'] as $expected) {
+        foreach (['branches: [main]', 'workflow_dispatch:', 'group: lumadent-production', 'cancel-in-progress: true', 'environment: production', "php-version: '8.5'", 'contents: read', 'actions: read', 'DEPLOY_ENDPOINT: ${{ secrets.DEPLOY_ENDPOINT }}', 'DEPLOY_SECRET: ${{ secrets.DEPLOY_SECRET }}', 'run: php tools/deployment/deploy.php'] as $expected) {
             self::assertStringContainsString($expected, $workflow);
         }
         self::assertStringNotContainsString('pull_request:', $workflow);
         self::assertStringNotContainsString('DEPLOY_POLL_SECONDS', $workflow);
+    }
+
+    public function test_composer_requires_the_same_php_version_as_production(): void
+    {
+        $composer = json_decode((string) file_get_contents(__DIR__.'/../../../composer.json'), true, 16, JSON_THROW_ON_ERROR);
+
+        self::assertSame('^8.4.1', $composer['require']['php']);
     }
 
     public function test_it_sends_one_request_with_the_approved_signature(): void
