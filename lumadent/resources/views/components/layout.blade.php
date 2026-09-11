@@ -78,7 +78,16 @@
                 <a href="{{ $urls->route('booking.demo') }}">{{ __('site.book') }}</a>
             </nav>
         </div>
-        <div class="container footer-notice"><span lang="en" dir="ltr">Concept Project</span> · {{ $profile['concept_notice'] }}</div>
+        <div class="container footer-notice">
+            <p><span lang="en" dir="ltr">Concept Project</span> · {{ $profile['concept_notice'] }}</p>
+            <p class="footer-credit">
+                <span>{{ __('site.footer_credit_prefix') }}</span>
+                <span lang="en" dir="ltr">ProDay Web Studio.</span>
+                <a href="{{ config('project.repository_url') }}" target="_blank" rel="noopener noreferrer">
+                    {{ __('site.footer_source') }} <span class="direction-arrow" aria-hidden="true">↗</span><span class="sr-only"> ({{ __('site.opens_new_tab') }})</span>
+                </a>
+            </p>
+        </div>
     </footer>
 </body>
 </html>

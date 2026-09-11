@@ -188,7 +188,9 @@ a[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 
 .footer-main p { margin-block-start: .75rem; }
 .footer-links { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; }
 .footer-links a { display: inline-flex; align-items: center; min-block-size: 2.75rem; }
-.footer-notice { border-block-start: 1px solid var(--line); padding-block-start: 1.5rem; font-size: .875rem; color: var(--muted); }
+.footer-notice { display: grid; gap: .65rem; border-block-start: 1px solid var(--line); padding-block-start: 1.5rem; font-size: .875rem; color: var(--muted); }
+.footer-credit { display: flex; align-items: baseline; flex-wrap: wrap; gap: .2rem .35rem; font-size: .8125rem; }
+.footer-credit a { color: var(--accent); font-weight: 600; }
 
 @media (max-width: 75rem) {
     .desktop-nav { display: none; }
