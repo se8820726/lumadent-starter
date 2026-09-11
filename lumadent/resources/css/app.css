@@ -146,6 +146,34 @@ a[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 
 .reading-width > .text-link { margin-block-end: 1.5rem; }
 .prose { display: grid; gap: 1.5rem; margin-block-end: 2rem; }
 .notice { border-inline-start: 3px solid var(--accent); padding: 1.3rem 1.5rem; background: var(--tint); margin-block-end: 2rem; }
+.treatment-hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(18rem, .7fr); gap: clamp(2.5rem, 7vw, 7rem); align-items: end; padding-block: clamp(3rem, 7vw, 6.5rem); }
+.treatment-hero-copy > .text-link { margin-block-end: 2rem; }
+.treatment-hero-copy h1 { max-inline-size: 12ch; }
+.treatment-intro { max-inline-size: 44rem; margin-block-start: 1.5rem; }
+.treatment-note { padding: clamp(1.5rem, 3vw, 2.5rem); border-radius: 1rem 4rem 1rem 1rem; background: var(--panel); color: var(--panel-ink); }
+[dir='rtl'] .treatment-note { border-radius: 4rem 1rem 1rem 1rem; }
+.treatment-note p { color: var(--panel-muted); }
+.service-suitability { max-inline-size: 60rem; }
+.service-suitability .lead { max-inline-size: 54rem; }
+.treatment-journey { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); gap: clamp(2rem, 7vw, 7rem); align-items: start; }
+.treatment-section-heading { max-inline-size: 42rem; }
+.treatment-steps { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-block-start: 1px solid var(--line); }
+.treatment-steps li { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: 1.25rem; padding-block: 1.7rem; border-block-end: 1px solid var(--line); }
+.treatment-steps h3 { font-size: 1.25rem; }
+.treatment-steps p { margin-block-start: .45rem; }
+.treatment-step-number { color: var(--accent); font-size: 1.1rem; letter-spacing: .08em; }
+.treatment-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.treatment-info-card { padding: clamp(1.5rem, 3vw, 2.2rem); border: 1px solid var(--line); border-radius: .8rem; background: var(--surface); }
+.treatment-info-card h2 { font-size: 1.35rem; }
+.treatment-info-card ul { display: grid; gap: .85rem; margin: 1.4rem 0 0; padding-inline-start: 1.25rem; color: var(--muted); }
+.treatment-faqs { display: grid; grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: clamp(2rem, 7vw, 7rem); align-items: start; }
+.faq-list { border-block-start: 1px solid var(--line); }
+.faq-item { border-block-end: 1px solid var(--line); }
+.faq-item summary { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-block-size: 3.5rem; padding-block: 1rem; cursor: pointer; color: var(--ink); font-weight: 600; list-style: none; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: '+'; color: var(--accent); font-size: 1.5rem; font-weight: 400; }
+.faq-item[open] summary::after { content: '−'; }
+.faq-item p { padding-block: 0 1.35rem; max-inline-size: 44rem; }
 .team-role { color: var(--accent); font-weight: 600; }
 .journey-section { display: grid; grid-template-columns: .75fr 1.25fr; gap: clamp(2rem, 7vw, 7rem); align-items: start; }
 .journey-heading { position: sticky; inset-block-start: 2rem; }
@@ -206,7 +234,7 @@ a[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 
 }
 
 @media (max-width: 48rem) {
-    .hero, .home-hero, .contact-grid, .team-grid, .journey-section, .practical-layout, .final-cta { grid-template-columns: minmax(0, 1fr); }
+    .hero, .home-hero, .contact-grid, .team-grid, .journey-section, .practical-layout, .final-cta, .treatment-hero, .treatment-journey, .treatment-faqs { grid-template-columns: minmax(0, 1fr); }
     .hero { gap: 2.5rem; }
     .home-hero { gap: 2.5rem; }
     .header-inner { gap: .8rem 1rem; padding-block: 1rem; }
@@ -216,6 +244,7 @@ a[aria-current='page'] { text-decoration: underline; text-decoration-thickness: 
     .hero-media, [dir='rtl'] .hero-media { border-radius: .8rem 3rem .8rem .8rem; }
     [dir='rtl'] .hero-media { border-radius: 3rem .8rem .8rem .8rem; }
     .journey-heading { position: static; }
+    .treatment-info-grid { grid-template-columns: minmax(0, 1fr); }
     .final-cta, [dir='rtl'] .final-cta { border-radius: 1rem 3rem 1rem 1rem; }
     [dir='rtl'] .final-cta { border-radius: 3rem 1rem 1rem 1rem; }
 }
